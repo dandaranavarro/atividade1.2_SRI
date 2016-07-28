@@ -4,28 +4,30 @@
 
 import string
 import re
+import math
 
 from collections import Counter
 
+
 #metodo que le o arquivo wikipedia
-def leWiki():
-    arq = open('oi.txt', 'r')
-    texto = arq.read()
-    arq.close()
-    return texto.lower()
-    
+def leWiki(documento):
+	arq = open(documento, 'r')
+	texto = arq.read()
+	arq.close()
+	return texto.lower()
+	
 #metodo para retirar os caracteres indesejados do arquivo
 def cleanText(arquivo):    
-    arquivo = re.sub(r"&.{2,4};"," ", arquivo)
-    arquivo = re.sub(r"\\{\\{!\\}\\}", " ", arquivo)
-    arquivo = arquivo.replace("[[", " ")
-    arquivo = arquivo.replace("]]", " ")
-    arquivo = re.sub("{{.*?}}", "", arquivo)
-    arquivo = re.sub("<.*?>", "", arquivo)
-    arquivo = re.sub("[^a-z0-9çáéíóúàãõâêô-]", " ", arquivo)
-    arquivo = re.sub(r"\n","", arquivo)	
-    return arquivo.split(" ")
-    
+	arquivo = re.sub(r"&.{2,4};"," ", arquivo)
+	arquivo = re.sub(r"\\{\\{!\\}\\}", " ", arquivo)
+	arquivo = arquivo.replace("[[", " ")
+	arquivo = arquivo.replace("]]", " ")
+	arquivo = re.sub("{{.*?}}", "", arquivo)
+	arquivo = re.sub("<.*?>", "", arquivo)
+	arquivo = re.sub("[^a-z0-9çáéíóúàãõâêô-]", " ", arquivo)
+	arquivo = re.sub(r"\n","", arquivo)	
+	return arquivo.split(" ")
+	
 """neste metodo eu irei criar primeiramente um dicionario onde as chaves sao os numeros dos documentos e os valores sao as palavras que
 compoem esse documento """
 def criaDict(texto):
@@ -70,7 +72,6 @@ def criaIndiceInvertido(texto):
 	dic = criaDict(texto)
 	indice_invertido = {}
 	indice_refinado = {}
-	arq = open("indice_invertido.txt", "w")
 	
 	
 	"""Percorro as chaves e valores do dicionario e vejo se o novo dicionario (indice_invertido) já possui uma determinada chave,
@@ -85,8 +86,16 @@ def criaIndiceInvertido(texto):
 				indice_invertido[palavra] = [int(k)]
 	
 	
+	return indice_invertido
+	
+
+def criaIndiceRefinado(texto):
+	indice_invertido = criaIndiceInvertido(texto)
+	dic = criaDict(texto)
+	indice_refinado = {}
+	
 	for termo, docs in indice_invertido.iteritems(): #percorre as palavras e a lista de documentos que elas se encontram 
-		idf = len(docs)  #idf eh igual a quantidade de documentos que aquela palavra se encontra
+		idf = 1.0/len(set(docs))  #idf eh igual a quantidade de documentos que aquela palavra se encontra
 		indice_refinado[termo] = {idf:[]}  #criando um dicionario dentro do outro para guardar as tuplas que irao conter (doc, tf_termo)
 		cnt = Counter()  #contador que ira dizer quantas vezes a palavra aparece em determinado doc
 		for doc in docs:    #percorrendo os documentos que tem aquela palavra
@@ -97,27 +106,42 @@ def criaIndiceInvertido(texto):
 			tupla = ('doc_'+ str(doc), cnt[termo])
 			if tupla not in indice_refinado[termo][idf]: #se o dicionario não tiver a tupla (doc, tf_termo) adiciona
 				indice_refinado[termo][idf].append(('doc_'+ str(doc), cnt[termo]))
-				
+
 	return indice_refinado
+
 	
-
-
-
-
-def score_BM25(n, f, qf, r, N, dl, avdl):
-	K = compute_K(dl, avdl)
-	first = log( ( (r + 0.5) / (R - r + 0.5) ) / ( (n - r + 0.5) / (N - n - R + r + 0.5)) )
-	second = ((k1 + 1) * f) / (K + f)
-	third = ((k2+1) * qf) / (k2 + qf)
-	return first * second * third
-
-
-def compute_K(dl, avdl):
-	k1 = 1
-	k2 = 3
-	b = 0
-	R = 0.0
+"""Calcula a frenquencia de uma palavra num doc"""
+def BM25(k, tf, M, idf):
 	
-	return k1 * ((1-b) + b * (float(dl)/float(avdl)) )
-
-print criaIndiceInvertido(leWiki())
+	frequency =  (((k + 1) * tf) / tf + k) * (math.log(M+1) * idf)
+	
+	return frequency
+	
+def criaRanking(consulta, documentos):
+	consulta = consulta.lower().split()
+	indice = criaIndiceRefinado(documentos)
+	M = len(criaDict(documentos))
+	
+	dic_frequencia = {}
+	
+	for palavra in consulta:
+		if indice.has_key(palavra):
+			idf = indice[palavra].keys()[0]
+			lista_tfs = indice[palavra][idf]
+			for doc in lista_tfs:
+				tf = doc[1]
+				bm = BM25(10, tf, M, idf)
+				if dic_frequencia.has_key(doc[0]):
+					dic_frequencia[doc[0]] += bm
+				else:
+					dic_frequencia[doc[0]] =  bm
+	return dic_frequencia
+	
+"""
+print criaIndiceInvertido(leWiki('oi.txt'))
+print ('\n\n')
+print criaIndiceRefinado(leWiki("oi.txt"))
+print ('\n\n')
+print consulta("estrelar Mosaico", leWiki("oi.txt"))"""
+print ('\n\n ranking BM25')
+print criaRanking("primeira guerra mundial", leWiki("oi.txt")) 
