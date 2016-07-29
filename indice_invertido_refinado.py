@@ -139,13 +139,9 @@ def criaRanking(consulta):
 			
 	return dic_frequencia
 	
-"""
-print criaIndiceInvertido(leWiki('oi.txt'))
-print ('\n\n')
-print criaIndiceRefinado(leWiki("oi.txt"))
-print ('\n\n')
-print consulta("estrelar Mosaico", leWiki("oi.txt"))"""
+
 
 criaDict(leWiki("ptwiki-v2.trec"))
 criaIndiceInvertido()
 print criaIndiceRefinado()
+
