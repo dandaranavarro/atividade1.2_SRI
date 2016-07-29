@@ -8,6 +8,10 @@ import math
 
 from collections import Counter
 
+tamanho_dict = 0
+dicionario = {}
+indice_invertido = {}
+indice_refinado = {}
 
 #metodo que le o arquivo wikipedia
 def leWiki(documento):
@@ -32,7 +36,6 @@ def cleanText(arquivo):
 compoem esse documento """
 def criaDict(texto):
 	palavras = texto
-	dicionario = {}
 	while palavras != '':
 		if palavras.find('<docno>') != -1: #percorrer o documento enquanto houver a tag <docno>
 			
@@ -64,20 +67,18 @@ def criaDict(texto):
 			
 		else:
 			palavras = ''
-	
+		
+		tamanho_dict = len(dicionario)
+		
 	return dicionario
 		
 """Com um dicionario criado a partir dos documentos existentes, irei criar o indice invertido e escreve-lo num arquivo .txt"""
-def criaIndiceInvertido(texto):
-	dic = criaDict(texto)
-	indice_invertido = {}
-	indice_refinado = {}
-	
-	
+def criaIndiceInvertido():
+
 	"""Percorro as chaves e valores do dicionario e vejo se o novo dicionario (indice_invertido) já possui uma determinada chave,
 	o seja, verifico se aquela palavra ja eh uma chave do indice invertido. Se ja for, adiciono aquele documento aos seus valores,
 	se nao crio uma nova chave no indice_invertido"""
-	for k,v in dic.iteritems(): 
+	for k,v in dicionario.iteritems(): 
 		for palavra in v:
 			if indice_invertido.has_key(palavra):
 				if k not in indice_invertido[palavra]: #verifico se o documento ja esta nos valores de determinada chave e so insiro ele nos valores se não estiver
@@ -89,18 +90,14 @@ def criaIndiceInvertido(texto):
 	return indice_invertido
 	
 
-def criaIndiceRefinado(texto):
-	indice_invertido = criaIndiceInvertido(texto)
-	dic = criaDict(texto)
-	indice_refinado = {}
-	
+def criaIndiceRefinado():
 	for termo, docs in indice_invertido.iteritems(): #percorre as palavras e a lista de documentos que elas se encontram 
 		idf = 1.0/len(set(docs))  #idf eh igual a quantidade de documentos que aquela palavra se encontra
 		indice_refinado[termo] = {idf:[]}  #criando um dicionario dentro do outro para guardar as tuplas que irao conter (doc, tf_termo)
 		cnt = Counter()  #contador que ira dizer quantas vezes a palavra aparece em determinado doc
 		for doc in docs:    #percorrendo os documentos que tem aquela palavra
 			cnt.clear()	
-			for palavra in dic[str(doc)]:
+			for palavra in dicionario[str(doc)]:
 				cnt[palavra] += 1
 				
 			tupla = ('doc_'+ str(doc), cnt[termo])
@@ -117,17 +114,19 @@ def BM25(k, tf, M, idf):
 	
 	return frequency
 	
-def criaRanking(consulta, documentos):
+def criaRanking(consulta):
+	resultado = "Consulta: " + consulta
+	
 	consulta = consulta.lower().split()
-	indice = criaIndiceRefinado(documentos)
-	M = len(criaDict(documentos))
+	
+	M = len(dicionario)
 	
 	dic_frequencia = {}
 	
 	for palavra in consulta:
-		if indice.has_key(palavra):
-			idf = indice[palavra].keys()[0]
-			lista_tfs = indice[palavra][idf]
+		if indice_refinado.has_key(palavra):
+			idf = indice_refinado[palavra].keys()[0]
+			lista_tfs = indice_refinado[palavra][idf]
 			for doc in lista_tfs:
 				tf = doc[1]
 				bm = BM25(10, tf, M, idf)
@@ -135,6 +134,7 @@ def criaRanking(consulta, documentos):
 					dic_frequencia[doc[0]] += bm
 				else:
 					dic_frequencia[doc[0]] =  bm
+					
 	return dic_frequencia
 	
 """
@@ -143,5 +143,9 @@ print ('\n\n')
 print criaIndiceRefinado(leWiki("oi.txt"))
 print ('\n\n')
 print consulta("estrelar Mosaico", leWiki("oi.txt"))"""
-print ('\n\n ranking BM25')
-print criaRanking("primeira guerra mundial", leWiki("oi.txt")) 
+
+criaDict(leWiki("ptwiki-v2.trec"))
+criaIndiceInvertido()
+criaIndiceRefinado()
+
+print criaRanking("primeira guerra mundial")
