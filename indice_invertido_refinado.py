@@ -134,7 +134,9 @@ def criaRanking(consulta):
 					dic_frequencia[doc[0]] += bm
 				else:
 					dic_frequencia[doc[0]] =  bm
-					
+	
+	
+			
 	return dic_frequencia
 	
 """
@@ -146,6 +148,4 @@ print consulta("estrelar Mosaico", leWiki("oi.txt"))"""
 
 criaDict(leWiki("ptwiki-v2.trec"))
 criaIndiceInvertido()
-criaIndiceRefinado()
-
-print criaRanking("primeira guerra mundial")
+print criaIndiceRefinado()
